@@ -1,60 +1,63 @@
-
 /*-----------------------------------------------------------------------------------------------------------------
-  MesaAyuda.js debe copiarse al directorio del proyecto express como index.js
-
-  REST API 
-  UADER - IS1
-  Caso de estudio MesaAyuda
-
-  Dr. Pedro E. Colla 2023,2025
+//*  MesaAyuda.js debe copiarse al directorio del proyecto express como index.js
+//*
+//*  REST API
+//*  UADER - FCyT - Ingenieria de Software I
+//*  Caso de estudio MesaAyuda
+//*
+//*  Dr. Pedro E. Colla 2023,2025
  *----------------------------------------------------------------------------------------------------------------*/
 //AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE=1
 
 import express from 'express';
 import crypto from 'crypto';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
 console.log("Comenzando servidor");
 
-// const crypto = require('crypto');
 console.log("crypto Ok!");
 
-//const express = require('express');
-//console.log("express Ok!");
-
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 console.log("express ready!");
 
 const PORT = 8080;
 
 import cors from 'cors';
 
-//const cors = require('cors');
 console.log("cors ok!");
 
 app.use(cors());
-console.log("cors ready!");
+console.log("CORS ready!");
 
 import AWS from 'aws-sdk'
-//var AWS = require('aws-sdk');
 console.log("aws-sdk ready!");
 
 /*----
 Acquire critical security resources from an external file out of the path
 */
-//const accessKeyId = require('../accessKeyId.js');
-//const secretAccessKey = require('../secretAccessKey.js');
+
 import accessKeyId from '../accessKeyId.js';
 import secretAccessKey  from '../secretAccessKey.js';
 
 let awsConfig = {
     "region"         : "us-east-1",
     "endpoint"       : "http://dynamodb.us-east-1.amazonaws.com",
-    "accessKeyId"    : accessKeyId, 
+    "accessKeyId"    : accessKeyId,
     "secretAccessKey": secretAccessKey
 };
 
 AWS.config.update(awsConfig);
 console.log("Servidor listo!");
 let docClient = new AWS.DynamoDB.DocumentClient();
+
+/*----
+   Application server in LISTEN mode
+*/
 
 app.listen(
     PORT,
@@ -63,10 +66,12 @@ app.listen(
 
 app.use(express.json());
 
-app.get('/api/cliente', (req,res) => {
-    res.status(200).send({response : "OK", message : "API Ready"});
-    console.log("API cliente: OK");
-});
+// --- Línea clave para servir archivos estáticos desde el directorio de este script ---
+app.use(express.static(__dirname));
+
+/*-------------------------------------------------------------------------------------------
+                            Funciones y Servicios
+ *-------------------------------------------------------------------------------------------*/
 
 /*-----------
 función para hacer el parse de un archivo JSON
@@ -76,60 +81,39 @@ function jsonParser(keyValue,stringValue) {
     var objectValue = JSON.parse(string);
     return objectValue[keyValue];
 }
-/*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
-/*                                                       API REST Cliente                                                            *
-/*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
 
+/*-------------------------------------------------------------------------------------------
+                            SERVER API
+ *-------------------------------------------------------------------------------------------*/
+/*==*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+ *                       API REST Cliente
+ *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*==*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
-/*-----------
-  /api/getCliente
-  Esta API permite acceder a un cliente dado su id
-*/
-app.post('/api/getCliente/:id', (req,res) => {
-    const { id } = req.params;
-    console.log("getCliente: id("+id+")");
-    var params = {
-        TableName: "cliente",
-        Key: {
-            "id" : id
-            //test use "id": "0533a95d-7eef-4c6b-b753-1a41c9d1fbd0"   
-             }
-        };
-    docClient.get(params, function (err, data) {
-        if (err)  {
-            res.status(400).send(JSON.stringify({response : "ERROR", message : "DB access error "+ null}));
-        } else {
+app.get('/api/cliente', (req,res) => {
+    res.status(200).send({response : "OK", message : "API Ready"});
+    console.log("API cliente: OK");
+});
 
-            if (Object.keys(data).length != 0) {
-               res.status(200).send(JSON.stringify({"response":"OK","cliente" : data.Item}),null,2);
-            } else {
-               res.status(400).send(JSON.stringify({"response":"ERROR",message : "Cliente no existe"}),null,2);
-            }
-        }    
-    })
-
-
-} );
 
 /*---
-  /api/loginCliente
+  /api/loginCliente (ORIGINAL - LOGIN POR ID)
   Esta API permite acceder a un cliente por ID y comparar la password pasada en un JSON en el cuerpo con la indicada en el DB
-*/  
+*/
 app.post('/api/loginCliente', (req,res) => {
 
     const { id } = req.body;
     const {password} = req.body;
 
-    console.log("loginCliente: id("+id+") password ("+password+")");
+    console.log("loginCliente (por ID): id("+id+") password ("+password+")");
 
     if (!password) {
         res.status(400).send({response : "ERROR" , message : "Password no informada"});
         return;
-    }    
+    }
     if (!id) {
         res.status(400).send({response : "ERROR" , message : "id no informado"});
         return;
-    }    
+    }
 
     let getClienteByKey = function () {
         var params = {
@@ -154,20 +138,121 @@ app.post('/api/loginCliente', (req,res) => {
                         if (activo == true) {
                             const nombre=jsonParser('nombre',data.Item);
                             const fecha_ultimo_ingreso=jsonParser('fecha_ultimo_ingreso',data.Item);
-                            res.status(200).send(JSON.stringify({response : "OK", "id" : id, "nombre" : nombre, "contacto" : contacto, "fecha_ultimo_ingreso": fecha_ultimo_ingreso}));    
+                            // Mejora de seguridad: No devolver la password en la respuesta
+                            res.status(200).send(JSON.stringify({response : "OK", "id" : id, "nombre" : nombre, "contacto" : contacto, "fecha_ultimo_ingreso": fecha_ultimo_ingreso}));
                         } else {
-                            res.status(400).send(JSON.stringify({response : "ERROR", message : "Cliente no activo"}));    
+                            res.status(400).send(JSON.stringify({response : "ERROR", message : "Cliente no activo"}));
                         }
                     } else {
                        res.status(400).send(JSON.stringify({response : "ERROR" , message : "usuario incorrecto"}));
-                    }    
-            }    
+                    }
             }
-        })
-    }
-    getClienteByKey();
+            }
+        }) // Cierre de docClient.get
+    }; // Cierre de getClienteByKey
+    getClienteByKey(); // Llamada a la función
 
-});
+}); // Cierre de app.post('/api/loginCliente', ...)
+
+/*---
+  /api/loginClienteEmail (NUEVA - LOGIN POR EMAIL - Mejora de seguridad)
+  Esta API permite acceder a un cliente por su email (campo contacto) y comparar la password pasada en un JSON en el cuerpo con la indicada en el DB.
+  Devuelve { "response": "OK", "id": "...", ... } si es correcto, { "response": "invalido" } si no.
+  Mejora de seguridad: No devuelve la password en la respuesta.
+*/
+app.post('/api/loginClienteEmail', async (req, res) => {
+    const { contacto, password } = req.body; // Cambiado de 'id' a 'contacto'
+
+    console.log("loginClienteEmail: contacto(" + contacto + ") password (" + password + ")");
+
+    if (!password) {
+        return res.status(400).json({ response: "ERROR", message: "Password no informada" });
+    }
+    if (!contacto) { // Cambiado de 'id' a 'contacto'
+        return res.status(400).json({ response: "ERROR", message: "Correo electrónico no informado" });
+    }
+
+    try {
+        // Usamos scan para buscar por 'contacto', ya que no es la clave primaria.
+        const paramsScan = {
+            TableName: "cliente",
+            FilterExpression: "#contacto = :contacto",
+            ExpressionAttributeNames: { '#contacto': 'contacto' },
+            ExpressionAttributeValues: { ':contacto': contacto }
+        };
+
+        const scanResults = await docClient.scan(paramsScan).promise();
+
+        if (scanResults.Items.length === 0) {
+            // Cliente no encontrado con ese email
+            return res.status(200).json({ response: "invalido" }); // Importante: status 200, pero response "invalido"
+        }
+
+        // Si se encontró, debería haber solo uno (asumiendo contacto único)
+        const foundCliente = scanResults.Items[0];
+
+        // Verificar contraseña en el servidor (Mejora de seguridad)
+        if (password === foundCliente.password) {
+            // Contraseña correcta
+            if (foundCliente.activo) {
+                // Actualizar fecha de último ingreso
+                const hoy = new Date().toISOString(); // Formato ISO para consistencia
+                const updateParams = {
+                    TableName: "cliente",
+                    Key: { "id": foundCliente.id }, // Se actualiza usando la PK
+                    UpdateExpression: "set fecha_ultimo_ingreso = :fui",
+                    ExpressionAttributeValues: { ":fui": hoy },
+                    ReturnValues: "UPDATED_NEW"
+                };
+                await docClient.update(updateParams).promise();
+
+                // Devolver OK y datos necesarios (sin la password)
+                return res.status(200).json({ response: "OK", id: foundCliente.id, nombre: foundCliente.nombre, contacto: foundCliente.contacto, fecha_ultimo_ingreso: foundCliente.fecha_ultimo_ingreso });
+            } else {
+                // Cliente encontrado pero no activo
+                 return res.status(200).json({ response: "invalido" }); // Opcional: un mensaje más específico
+            }
+        } else {
+            // Contraseña incorrecta (Mejora de seguridad)
+             return res.status(200).json({ response: "invalido" });
+        }
+
+    } catch (err) {
+        console.error("Error en loginClienteEmail:", err);
+        return res.status(500).json({ response: "ERROR", message: "Error interno del servidor" });
+    }
+}); // Fin de la nueva función loginClienteEmail
+
+
+/*-----------
+  /api/getCliente
+  Esta API permite acceder a un cliente dado su id
+*/
+app.post('/api/getCliente/:id', (req,res) => {
+    const { id } = req.params;
+    console.log("getCliente: id("+id+")");
+    var params = {
+        TableName: "cliente",
+        Key: {
+            "id" : id
+            //test use "id": "0533a95d-7eef-4c6b-b753-1a41c9d1fbd0"
+             }
+        };
+    docClient.get(params, function (err, data) {
+        if (err)  {
+            res.status(400).send(JSON.stringify({response : "ERROR", message : "DB access error "+ null}));
+        } else {
+
+            if (Object.keys(data).length != 0) {
+               res.status(200).send(JSON.stringify({"response":"OK","cliente" : data.Item}),null,2);
+            } else {
+               res.status(400).send(JSON.stringify({"response":"ERROR",message : "Cliente no existe"}),null,2);
+            }
+        }
+    })
+
+
+} );
 
 /*---------
 Función para realizar el SCAN de un DB de cliente usando contacto como clave para la búsqueda (no es clave formal del DB)
@@ -180,15 +265,15 @@ async function scanDb(contacto) {
       Select: "ALL_ATTRIBUTES" || "ALL_PROJECTED_ATTRIBUTES" || "SPECIFIC_ATTRIBUTES" || "COUNT",
       FilterExpression : 'id = :contacto',
       ExpressionAttributeValues : {':contacto' : scanKey}
-    };      
+    };
     var objectPromise = await docClient.scan(paramsScan).promise().then((data) => {
-          return data.Items 
-    });  
+          return data.Items
+    });
     return objectPromise;
 }
 
 /*----
-addCliente
+addCliente (ORIGINAL - PUEDE TENER ERROR DE LOGICA: ASIGNA CONTACTO A ID)
 Revisa si el contacto (e-mail) existe y en caso que no da de alta el cliente generando un id al azar
 */
 app.post('/api/addCliente', (req,res) => {
@@ -197,7 +282,7 @@ app.post('/api/addCliente', (req,res) => {
     const {password} = req.body;
     const {nombre}   = req.body;
     console.log("addCliente: contacto("+contacto+") nombre("+nombre+") password("+password+")");
-    
+
     if (!password) {
         res.status(400).send({response : "ERROR" , message: "Password no informada"});
         return;
@@ -210,7 +295,7 @@ app.post('/api/addCliente', (req,res) => {
     if (!contacto){
         res.status(400).send({response : "ERROR" , message : "Contacto no informado"});
         return;
-    } 
+    }
 
     scanDb(contacto)
     .then(resultDb => {
@@ -223,10 +308,9 @@ app.post('/api/addCliente', (req,res) => {
         var mm = String(hoy.getMonth() + 1).padStart(2, '0'); //January is 0!
         var yyyy = hoy.getFullYear();
         hoy = dd + '/' + mm + '/' + yyyy;
-    
+
         const newCliente = {
-         id                    : crypto.randomUUID(),
-         contacto              : contacto,    
+         id                    : contacto, // <-- OJO: Asigna el 'contacto' como 'id'. Esto puede no ser deseable si 'id' debe ser único y no cambiable.
          nombre                : nombre,
          password              : password,
          activo                : true,
@@ -236,7 +320,7 @@ app.post('/api/addCliente', (req,res) => {
          fecha_cambio_password : hoy,
          fecha_ultimo_ingreso  : hoy,
         };
-    
+
         const paramsPut = {
           TableName: "cliente",
           Item: newCliente,
@@ -259,9 +343,9 @@ app.post('/api/addCliente', (req,res) => {
 Permite actualizar datos del cliente contacto, nombre, estado de activo y registrado
 */
 app.post('/api/updateCliente', (req,res) => {
-    
+
     const {id} = req.body;
-    const {nombre}   = req.body; 
+    const {nombre}   = req.body;
     const {password} = req.body;
 
     var activo = ((req.body.activo+'').toLowerCase() === 'true')
@@ -288,10 +372,10 @@ app.post('/api/updateCliente', (req,res) => {
         TableName: "cliente",
         Key: {
             "id" : id
-            //test use "id": "0533a95d-7eef-4c6b-b753-1a41c9d1fbd0"   
+            //test use "id": "0533a95d-7eef-4c6b-b753-1a41c9d1fbd0"
              }
         };
-        
+
     docClient.get(params, function (err, data) {
         if (err)  {
             res.status(400).send(JSON.stringify({response : "ERROR", message : "DB access error "+ null}));
@@ -303,27 +387,27 @@ app.post('/api/updateCliente', (req,res) => {
                 return;
             } else {
 
-                const paramsUpdate = { 
-   
-                    ExpressionAttributeNames: { 
-                         "#a": "activo", 
+                const paramsUpdate = {
+
+                    ExpressionAttributeNames: {
+                         "#a": "activo",
                          "#n": "nombre",
                          "#p": "password",
                          "#r": "registrado"
 
-                    }, 
-                    ExpressionAttributeValues: { 
-                        ":a": activo , 
+                    },
+                    ExpressionAttributeValues: {
+                        ":a": activo ,
                         ":p": password,
-                        ":n": nombre , 
-                        ":r": registrado 
-                   }, 
-                   Key: { 
-                       "id": id 
-                   }, 
-                   ReturnValues: "ALL_NEW", 
-                   TableName: "cliente", 
-                   UpdateExpression: "SET #n = :n, #p = :p, #a = :a, #r = :r" 
+                        ":n": nombre ,
+                        ":r": registrado
+                   },
+                   Key: {
+                       "id": id
+                   },
+                   ReturnValues: "ALL_NEW",
+                   TableName: "cliente",
+                   UpdateExpression: "SET #n = :n, #p = :p, #a = :a, #r = :r"
                 };
                 docClient.update(paramsUpdate, function (err, data) {
                     if (err)  {
@@ -331,10 +415,10 @@ app.post('/api/updateCliente', (req,res) => {
                         return;
                     } else {
                         res.status(200).send(JSON.stringify({response : "OK", message : "updated" , "data": data}));
-                    }    
-                });    
+                    }
+                });
             }
-        }    
+        }
     })
 
 
@@ -344,10 +428,10 @@ app.post('/api/updateCliente', (req,res) => {
 Permite cambiar la password de un cliente
 */
 app.post('/api/resetCliente', (req,res) => {
-    
+
     const {id}       = req.body;
     const {password} = req.body;
- 
+
     if (!id) {
         res.status(400).send({response : "ERROR" , message: "Id no informada"});
         return;
@@ -362,10 +446,10 @@ app.post('/api/resetCliente', (req,res) => {
         TableName: "cliente",
         Key: {
             "id" : id
-            //test use "id": "0533a95d-7eef-4c6b-b753-1a41c9d1fbd0"   
+            //test use "id": "0533a95d-7eef-4c6b-b753-1a41c9d1fbd0"
              }
         };
-        
+
     docClient.get(params, function (err, data) {
         if (err)  {
             res.status(400).send(JSON.stringify({response : "ERROR", message : "DB access error "+ null}));
@@ -377,20 +461,20 @@ app.post('/api/resetCliente', (req,res) => {
                 return;
             } else {
 
-                const paramsUpdate = { 
-   
-                    ExpressionAttributeNames: { 
-                         "#p": "password" 
-                    }, 
-                    ExpressionAttributeValues: { 
-                        ":p": password 
-                   }, 
-                   Key: { 
-                       "id": id 
-                   }, 
-                   ReturnValues: "ALL_NEW", 
-                   TableName: "cliente", 
-                   UpdateExpression: "SET #p = :p" 
+                const paramsUpdate = {
+
+                    ExpressionAttributeNames: {
+                         "#p": "password"
+                    },
+                    ExpressionAttributeValues: {
+                        ":p": password
+                   },
+                   Key: {
+                       "id": id
+                   },
+                   ReturnValues: "ALL_NEW",
+                   TableName: "cliente",
+                   UpdateExpression: "SET #p = :p"
                 };
                 docClient.update(paramsUpdate, function (err, data) {
                     if (err)  {
@@ -398,14 +482,134 @@ app.post('/api/resetCliente', (req,res) => {
                         return;
                     } else {
                         res.status(200).send(JSON.stringify({response : "OK", message : "updated" , "data": data}));
-                    }    
-                });    
+                    }
+                });
             }
-        }    
+        }
     })
+
 });
+
+/*-------
+/api/resetClienteEmail (MODIFICADA - RESET POR EMAIL - SIN VERIFICACIÓN DE CONTRASEÑA ACTUAL)
+Permite cambiar la password de un cliente usando su email
+*/
+app.post('/api/resetClienteEmail', async (req,res) => {
+    
+    const { contacto, newPassword } = req.body; // Solo email y nueva contraseña
+
+    console.log("resetClienteEmail: contacto(" + contacto + ") newPassword (" + newPassword + ")");
+ 
+    if (!contacto) {
+        res.status(400).send({response : "ERROR" , message: "Correo electrónico no informado"});
+        return;
+    }
+
+    if (!newPassword) {
+        res.status(400).send({response : "ERROR" , message: "Nueva contraseña no informada"});
+        return;
+    }
+
+    try {
+        const paramsScan = {
+            TableName: "cliente",
+            FilterExpression: "#contacto = :contacto",
+            ExpressionAttributeNames: { '#contacto': 'contacto' },
+            ExpressionAttributeValues: { ':contacto': contacto }
+        };
+
+        const scanResults = await docClient.scan(paramsScan).promise();
+
+        if (scanResults.Items.length === 0) {
+            res.status(400).send(JSON.stringify({"response":"ERROR",message : "Cliente no existe"}),null,2);
+            return;
+        }
+
+        const foundCliente = scanResults.Items[0];
+
+        // Actualizar contraseña directamente
+        const paramsUpdate = {
+            ExpressionAttributeNames: {
+                 "#p": "password"
+            },
+            ExpressionAttributeValues: {
+                ":p": newPassword // Usar newPassword
+           },
+           Key: {
+               "id": foundCliente.id // Usar el id del cliente encontrado
+           },
+           ReturnValues: "ALL_NEW",
+           TableName: "cliente",
+           UpdateExpression: "SET #p = :p"
+        };
+        const updateResult = await docClient.update(paramsUpdate).promise();
+        res.status(200).send(JSON.stringify({response : "OK", message : "updated" , "data": updateResult}));
+
+    } catch (err) {
+        console.error("Error en resetClienteEmail:", err);
+        res.status(500).send(JSON.stringify({response : "ERROR", message : "DB access error "+ err}));
+    }
+
+});
+
+/*-------
+/api/registrarCliente (NUEVA - REGISTRO)
+Permite registrar un nuevo cliente
+*/
+app.post('/api/registrarCliente', async (req, res) => {
+    const { contacto, password, nombre } = req.body;
+
+    console.log("registrarCliente: contacto(" + contacto + ") password (" + password + ") nombre (" + nombre + ")");
+
+    if (!contacto || !password || !nombre) {
+        return res.status(400).json({ response: 'ERROR', message: 'Faltan datos: contacto, password o nombre' });
+    }
+
+    try {
+        // Verificar si el contacto ya existe
+        const paramsScan = {
+            TableName: "cliente",
+            FilterExpression: "#contacto = :contacto",
+            ExpressionAttributeNames: { '#contacto': 'contacto' },
+            ExpressionAttributeValues: { ':contacto': contacto }
+        };
+
+        const scanResults = await docClient.scan(paramsScan).promise();
+
+        if (scanResults.Items.length > 0) {
+            return res.status(400).json({ response: 'ERROR', message: 'Cliente ya existe' });
+        }
+
+        var hoy = new Date();
+        var dd = String(hoy.getDate()).padStart(2, '0');
+        var mm = String(hoy.getMonth() + 1).padStart(2, '0'); //January is 0!
+        var yyyy = hoy.getFullYear();
+        hoy = dd + '/' + mm + '/' + yyyy;
+
+        const newCliente = {
+         id                    : crypto.randomUUID(), // Genera un ID único
+         nombre                : nombre,
+         contacto              : contacto, // Almacena el contacto
+         password              : password,
+         activo                : true,
+         registrado            : true,
+         primer_ingreso        : true, // Nuevo registro
+         fecha_alta            : hoy,
+         fecha_cambio_password : hoy,
+         fecha_ultimo_ingreso  : hoy,
+        };
+
+        await docClient.put({ TableName: "cliente", Item: newCliente }).promise();
+        return res.status(200).json({ response: 'OK', message: 'Cliente registrado correctamente', cliente: newCliente });
+
+    } catch (err) {
+        console.error("Error en registrarCliente:", err);
+        return res.status(500).json({ response: "ERROR", message: "Error interno del servidor" });
+    }
+});
+
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
-/*                                                       API REST ticket                                                             *
+/*                                                       API REST ticket
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
 /*---------
@@ -419,21 +623,21 @@ async function scanDbTicket(clienteID) {
       Select: "ALL_ATTRIBUTES" || "ALL_PROJECTED_ATTRIBUTES" || "SPECIFIC_ATTRIBUTES" || "COUNT",
       FilterExpression : 'clienteID = :clienteID',
       ExpressionAttributeValues : {':clienteID' : scanKey}
-    };      
+    };
     var objectPromise = await docClient.scan(paramsScan).promise().then((data) => {
-          return data.Items 
-    });  
+          return data.Items
+    });
     return objectPromise;
 }
 /*----------
   listarTicket
   API REST para obtener todos los tickets de un clienteID
-*/  
+*/
 app.post('/api/listarTicket', (req,res) => {
 
     const {clienteID}  = req.body;
     console.log("listarTicket: clienteID("+clienteID+")");
- 
+
     if (!clienteID) {
         res.status(400).send({response : "ERROR" , message: "clienteID no informada"});
         return;
@@ -459,7 +663,7 @@ app.post('/api/listarTicket', (req,res) => {
 app.post('/api/getTicket', (req,res) => {
     const {id}  = req.body;
     console.log("getTicket: id("+id+")");
- 
+
     if (!id) {
         res.status(400).send({response : "ERROR" , message: "ticket id no informada"});
         return;
@@ -468,7 +672,7 @@ app.post('/api/getTicket', (req,res) => {
         TableName: "ticket",
         Key: {
             "id" : id
-            //"clienteID": "0533a95d-7eef-4c6b-b753-1a41c9d1fbd0"   
+            //"clienteID": "0533a95d-7eef-4c6b-b753-1a41c9d1fbd0"
             //"id"       : "e08905a8-4aab-45bf-9948-4ba2b8602ced"
         }
     };
@@ -480,12 +684,11 @@ app.post('/api/getTicket', (req,res) => {
             if (Object.keys(data).length == 0) {
                 res.status(400).send({response : "ERROR" , message : "ticket invalido"});
             } else {
-                res.status(200).send(JSON.stringify({response : "OK", "data" : data}));    
-            }    
+                res.status(200).send(JSON.stringify({response : "OK", "data" : data}));
+            }
         }
     })
 });
-
 /*-----------------
 /api/addTicket
 API REST para agregar ticket (genera id)
@@ -566,7 +769,7 @@ app.post('/api/updateTicket', (req,res) => {
         res.status(400).send({response : "ERROR" , message: "fecha apertura"});
         return;
     }
-    
+
     var hoy = new Date();
     var dd = String(hoy.getDate()).padStart(2, '0');
     var mm = String(hoy.getMonth() + 1).padStart(2, '0'); //January is 0!
@@ -579,10 +782,10 @@ app.post('/api/updateTicket', (req,res) => {
         TableName: "ticket",
         Key: {
             "id" : id
-            //test use "id": "0533a95d-7eef-4c6b-b753-1a41c9d1fbd0"   
+            //test use "id": "0533a95d-7eef-4c6b-b753-1a41c9d1fbd0"
              }
         };
-        
+
     docClient.get(params, function (err, data) {
         if (err)  {
             res.status(400).send(JSON.stringify({response : "ERROR", message : "DB access error "+ null}));
@@ -594,30 +797,30 @@ app.post('/api/updateTicket', (req,res) => {
                 return;
             } else {
 
-                const paramsUpdate = { 
-   
-                    ExpressionAttributeNames: { 
-                         "#c": "clienteID", 
+                const paramsUpdate = {
+
+                    ExpressionAttributeNames: {
+                         "#c": "clienteID",
                          "#e": "estado_solucion",
                          "#s": "solucion",
                          "#a": "fecha_apertura",
                          "#u": "ultimo_contacto",
                          "#d": "descripcion"
-                    }, 
-                    ExpressionAttributeValues: { 
-                        ":c":  clienteID, 
-                        ":e":  estado_solucion , 
-                        ":s":  solucion , 
+                    },
+                    ExpressionAttributeValues: {
+                        ":c":  clienteID,
+                        ":e":  estado_solucion ,
+                        ":s":  solucion ,
                         ":a":  fecha_apertura,
                         ":u":  ultimo_contacto,
-                        ":d":  descripcion 
-                   }, 
-                   Key: { 
-                       "id": id 
-                   }, 
-                   ReturnValues: "ALL_NEW", 
-                   TableName: "ticket", 
-                   UpdateExpression: "SET #c = :c, #e = :e, #a = :a, #s = :s, #d = :d, #u = :u" 
+                        ":d":  descripcion
+                   },
+                   Key: {
+                       "id": id
+                   },
+                   ReturnValues: "ALL_NEW",
+                   TableName: "ticket",
+                   UpdateExpression: "SET #c = :c, #e = :e, #a = :a, #s = :s, #d = :d, #u = :u"
                 };
                 docClient.update(paramsUpdate, function (err, data) {
                     if (err)  {
@@ -625,10 +828,10 @@ app.post('/api/updateTicket', (req,res) => {
                         return;
                     } else {
                         res.status(200).send(JSON.stringify({response : "OK",  "data": data}));
-                    }    
-                });    
+                    }
+                });
             }
-        }    
+        }
     })
 
 });
