@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Mesa de Ayuda</title>
+    <style type="text/css"> 
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        label {
+            font-size: 18px;
+        }
+        form {
+            width: 500px;
+            border: 1px solid black; 
+            margin: 0 auto; /* Centrado */
+        }
+        input { 
+            margin: 7px; 
+            padding: 2px;
+            width: 75%; /* Ajuste de ancho */
+        } 
+        .txt {
+            display: inline-block;
+            outline: none;
+            margin: 0;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        /* Estilo para el mensaje de T&C */
+        #error-terminos {
+            color: red;
+            font-size: 14px;
+            display: none;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <center>
+        <img src="HelpDeskGirl.png" alt="Nuestra imagen corporativa" style="width:200px;height:150px;">
+        <h1>Sistema de Mesa de Ayuda</h1>
+        <h2>Registrarse</h2>
+    </center>
+
+    <center>
+        <form id="registroForm" class="form" style="background-color:#d8f7cf; padding: 20px;" novalidate>
+            <table>
+                <tr>
+                    <td><label for="nombre" class="form-label">Nombre completo:</label></td>
+                </tr>
+                <tr>
+                    <td><input type="text" id="nombre" name="nombre" class="txt" placeholder="Tu nombre completo" required></td>
+                </tr>
+                <tr>
+                    <td><label for="email" class="form-label">Correo Electrónico:</label></td>
+                </tr>
+                <tr>
+                    <td><input type="email" id="email" name="contacto" class="txt" placeholder="Tu correo electrónico" required></td>
+                </tr>
+                <tr>
+                    <td><label for="password" class="form-label">Contraseña:</label></td>
+                </tr>
+                <tr>
+                    <td><input type="password" id="password" name="password" class="txt" placeholder="Tu contraseña" required></td>
+                </tr>
+                <tr>
+                    <td><label for="confirmPassword" class="form-label">Confirmar Contraseña:</label></td>
+                </tr>
+                <tr>
+                    <td><input type="password" id="confirmPassword" name="confirmPassword" class="txt" placeholder="Repite la contraseña" required></td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <br>
+                        <input name="termscondition" type="checkbox" id="termscondition"> 
+                        Acepto los términos y condiciones del ingreso al sistema (S.E.u.O)
+                    </td>
+                </tr>
+                <!-- Mensaje de error personalizado (como en tu segunda imagen) -->
+                <tr>
+                    <td>
+                        <div id="error-terminos">
+                            Debe aceptar los T&C para poder usar el sistema
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span id="mensajeResultado"></span></td>
+                </tr>
+            </table>
+            <button type="submit">Registrarse</button>
+        </form>
+        <p>¿Ya tienes una cuenta? <a href="loginClient.html">Inicia sesión aquí</a></p>
+    </center>
+
+    <script src="registro.js" type="module"></script>
+</body>
+</html>
