@@ -17,6 +17,15 @@ Este proyecto es una aplicación web desarrollada como parte de un trabajo prác
 - Validaciones en el frontend y backend.
 - Manejo de errores.
 
+## Estructura del Proyecto
+
+- `IS1_MesaAyuda.js`: Servidor Node.js que maneja las rutas y la conexión a DynamoDB.
+- Carpeta `HTML/`:
+  - `loginClient.html`: Página de inicio de sesión.
+  - `registro.html`: Formulario de registro de usuario.
+  - `resetPassword.html`: Funcionalidad para restablecer contraseña.
+  - `listarTicket.html`: Vista para listar tickets de soporte.
+  - Archivos `.js` asociados: Lógica del frontend para cada página.
 ## Notas
 
 - El proyecto está configurado para conectarse a una base de datos AWS DynamoDB.
@@ -26,3 +35,4 @@ Este proyecto es una aplicación web desarrollada como parte de un trabajo prác
 ## Propósito
 
 Este repositorio sirve como ejemplo de mis habilidades en desarrollo web backend/frontend y manejo de bases de datos NoSQL.
+
